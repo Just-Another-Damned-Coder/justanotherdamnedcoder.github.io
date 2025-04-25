@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on JustAnotherDamnedCoder</title>
+    <link>https://justanotherdamnedcoder.github.io/tags/</link>
+    <description>Recent content in Tags on JustAnotherDamnedCoder</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 26 Dec 2024 14:05:30 +0530</lastBuildDate><atom:link href="https://justanotherdamnedcoder.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Borrowing</title>
+      <link>https://justanotherdamnedcoder.github.io/tags/borrowing/</link>
+      <pubDate>Thu, 26 Dec 2024 14:05:30 +0530</pubDate>
+      
+      <guid>https://justanotherdamnedcoder.github.io/tags/borrowing/</guid>
+      <description></description>
+      <content></content>
+    </item>
+    
+    <item>
+      <title>Ownership</title>
+      <link>https://justanotherdamnedcoder.github.io/tags/ownership/</link>
+      <pubDate>Thu, 26 Dec 2024 14:05:30 +0530</pubDate>
+      
+      <guid>https://justanotherdamnedcoder.github.io/tags/ownership/</guid>
+      <description></description>
+      <content></content>
+    </item>
+    
+    <item>
+      <title>Rust</title>
+      <link>https://justanotherdamnedcoder.github.io/tags/rust/</link>
+      <pubDate>Thu, 26 Dec 2024 14:05:30 +0530</pubDate>
+      
+      <guid>https://justanotherdamnedcoder.github.io/tags/rust/</guid>
+      <description></description>
+      <content></content>
+    </item>
+    
+  </channel>
+</rss>

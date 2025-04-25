@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>Rust: Demystifying strings :: JustAnotherDamnedCoder</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Why are string data types complicated in rust.. Ownership, Borrowing, Slices ? String literals ?? Let&#39;s try to understand it shall we ..." />
+<meta name="keywords" content="rust, string" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://justanotherdamnedcoder.github.io/posts/rust_string/" />
+
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://justanotherdamnedcoder.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://justanotherdamnedcoder.github.io/img/theme-colors/profile.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Rust: Demystifying strings">
+<meta property="og:description" content="Why are string data types complicated in rust.. Ownership, Borrowing, Slices ? String literals ?? Let&#39;s try to understand it shall we ..." />
+<meta property="og:url" content="https://justanotherdamnedcoder.github.io/posts/rust_string/" />
+<meta property="og:site_name" content="JustAnotherDamnedCoder" />
+
+  
+  
+  <meta property="og:image" content="https://justanotherdamnedcoder.github.io/img/Rust.jpg">
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+
+  <meta property="article:published_time" content="2024-12-26 14:05:30 &#43;0530 IST" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+</head>
+<body class="green">
+
+
+
+
+<div class="container center headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    JustAnotherDamnedCoder
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/">Blog</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+      
+        
+          <li><a href="/about" >About</a></li>
+        
+      
+        
+          <li><a href="/" >Blog</a></li>
+        
+      
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://justanotherdamnedcoder.github.io/posts/rust_string/">Rust: Demystifying strings</a>
+  </h1>
+  <div class="post-meta"><time class="post-date">2024-12-26</time><span class="post-author">Moris Johnson</span>
+    
+<span class="post-reading-time">11 min read (2215 words)</span></div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://justanotherdamnedcoder.github.io/tags/rust/">rust</a>&nbsp;
+      
+      #<a href="https://justanotherdamnedcoder.github.io/tags/ownership/">ownership</a>&nbsp;
+      
+      #<a href="https://justanotherdamnedcoder.github.io/tags/borrowing/">borrowing</a>&nbsp;
+      
+    </span>
+  
+  
+    
+    <img src="https://justanotherdamnedcoder.github.io/img/Rust.jpg"
+      class="post-cover"
+      alt=" "
+      title="Cover Image" />
+  
+
+
+
+  
+
+  <div class="post-content"><div>
+        <h1 id="introduction-optional">Introduction [optional]<a href="#introduction-optional" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<hr>
+<p>When I first started learning Rust, the concept of strings threw me off. So, I did what anyone with a sane mind would do - I gave up&hellip; but eventually after struggling for a long amount of time, I learned it. It was interesting at the very least. So, I thought I would write about it, you know, to make sure I don’t forget and to help other wanderers coming here for help.</p>
+<h1 id="sized-and-unsized-variables">Sized and Unsized variables<a href="#sized-and-unsized-variables" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<hr>
+<p>The rust language itself is known for it&rsquo;s memory-safety, this is being achieved by making the compiler itself understand the code and allocate memory. There are two types of memory that rust can use : <code>stack</code> and <code>heap</code> , stack is for static varibles and is faster. The heap however is used for storing variables which will/can have varying sizes. Let&rsquo;s say our program does the simple job of reading the contents of a file (any file). We can never know the exact size required for the contents of the file right ? Sometimes it will be 10 lines, sometimes 100. It&rsquo;s the same for a string datatype -  It can be extended (<code>run</code> to <code>running</code> ), reduced (<code>running</code> to <code>run</code> ) etc.. So the <code>str</code> data type is <code>unsized</code> (we don&rsquo;t know it&rsquo;s size) .</p>
+<p>On the other hand data types like <code>integers</code> and <code>float</code> are all <code>sized</code> variables, Let&rsquo;s look at it through an example :</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> number: <span style="color:#66d9ef">i32</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">12</span>;  <span style="color:#75715e">// The binary representation of 12 is 1100 ; 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><p>We store the value <code>12</code> in a <code>i32</code> format - integer represented using 32 bits, which is 4 bytes thus we can say it&rsquo;s size. Even if the number value is over-written after words as long as it&rsquo;s a number that can be written with 32 bits binary it&rsquo;s size will always remain 4 bytes. Okay what&rsquo;s the point of learning about <code>sized</code> and <code>unsized</code> variables ?</p>
+<blockquote>
+<p><strong>The rust compiler needs to know the type of variables and it&rsquo;s size for it to sucessfully compile the code.</strong></p>
+</blockquote>
+<p>For the above example of reading file contetns, we can&rsquo;t exactly code it in a way like we do it in python;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>    <span style="color:#66d9ef">with</span> open(file, <span style="color:#e6db74">&#39;r&#39;</span>) <span style="color:#66d9ef">as</span> f:
+</span></span><span style="display:flex;"><span>        contents <span style="color:#f92672">=</span> file<span style="color:#f92672">.</span>read()
+</span></span></code></pre></div><p>This is because <code>contents</code> is of size unknown, thus rust compiler doesn&rsquo;t accept it - it needs to know for certain how much memory it needs to allocate to it. That&rsquo;s the reason we can&rsquo;t explicitly define a string in rust since we can&rsquo;t say how much memory it will take, rust uses it&rsquo;s two memory spaces to overcome this problem. Let&rsquo;s find out how, there are two main types of strings in rust : <code>&amp;str</code> and <code>String</code>. Let&rsquo;s look at it through an example ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">main</span>() {                         
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> name <span style="color:#f92672">=</span> String::from(<span style="color:#e6db74">&#34;Moris&#34;</span>);    <span style="color:#75715e">// This is of String type ;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> first_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Moris&#34;</span>;            <span style="color:#75715e">// This is of &amp;str type ;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><p>Both of them store the same value <code>Moris</code> , so what&rsquo;s the difference here.. The main difference is that one of them is stored in the <code>stack</code> and one of them is stored in a <code>heap</code> .</p>
+<h2 id="str-datatype"><code>&amp;str</code> datatype<a href="#str-datatype" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<hr>
+<p>A <code>&amp;str</code> is a simple string, meaning the types of <code>string</code> that doesn&rsquo;t need modification - immutable; The variable defined as <code>&amp;str</code> type holds a pointer + length of the string . It&rsquo;s also known as &ldquo;reference-string&rdquo; . So when you acess the variable ( you look at it ;) It tells you where the data is located (using the pointer) on the stack then how much of the string data that you should look (span ; length of the string) . Why make this complicated ? - This is cause of the reason we discussed earlier, the compiler needs to know the size of the variable , since <code>str</code> is <code>unsized</code> , we use <code>&amp;</code> ( a pointer ) to access it, cause the pointer is a adresss for example  <code>0xffff</code> is of size 4 bytes and is <code>sized</code> ( any address always has size 4 bytes ) - making the compiler happy . Thus we solved the problem. So when you acess the variable <code>(adress, n)</code> in the code - the compiler understands that the data is located at <code>adress</code> and is of length <code>n</code> .</p>
+<blockquote>
+<p><strong><code>&amp;str</code> is a immutable string reference containing a pointer to borrowed <code>str</code> or <code>String</code> and it&rsquo;s <code>length</code> . It&rsquo;s commonly used when you need a immutable string.</strong></p>
+</blockquote>
+<h2 id="string-datatype"><code>String</code> datatype<a href="#string-datatype" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<hr>
+<p>Here is the problem now, I want to store my full name, but I don&rsquo;t want to write it again I just want to add it to the <code>string</code>. But as we discussed <code>&amp;str</code> cannot be modified ( the variable can be modified - not it&rsquo;s contents ) - immutable strings. This is where the <code>String</code> data type comes into the picture, when you define a <code>String</code> it&rsquo;s contents are put into the heap and then the <code>(pointer, n)</code> is returned to the variable. The difference being that you can increase, decrease the string as per your wish. Let&rsquo;s look at a code example ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">main</span>() {                         
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> name: String <span style="color:#f92672">=</span> String::from(<span style="color:#e6db74">&#34;Moris&#34;</span>);    <span style="color:#75715e">// This is of String type ;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> first_name: <span style="color:#66d9ef">&amp;</span><span style="color:#66d9ef">str</span> <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>name[<span style="color:#ae81ff">0</span><span style="color:#f92672">..=</span><span style="color:#ae81ff">4</span>];             <span style="color:#75715e">// This is of &amp;str type ;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    println!(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{first_name}</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>    name.push_str(<span style="color:#e6db74">&#34; Johnson&#34;</span>);
+</span></span><span style="display:flex;"><span>    println!(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{name}</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>When you run this, the output will be :</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Moris
+</span></span><span style="display:flex;"><span>Moris Johnson
+</span></span></code></pre></div><p>First i defined a <strong>mutable</strong> variable <code>name</code> , then extracted the first name from it by taking the first 5 indices - which will be stored as a <code>&amp;str</code>  cause we won&rsquo;t be modifying it further, the only use of it is for printing thus a immutable string slice is sufficient. Next I used the method <code>.push_str</code> to add last name to the <strong>mutable</strong> variable and then prined it out.</p>
+<blockquote>
+<p><strong><code>String</code> is a heap allcoated <code>str</code>, is a vector of characters, commonly used for mutable and re-sizable string which can be allocated and de-allocated as needed.</strong></p>
+</blockquote>
+<h2 id="working-with-strings">Working with strings<a href="#working-with-strings" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<hr>
+<p>Other than the ways of defining strings from the code snippet above, you can also use <code>into</code> method to make a <code>String</code> , You can do it like this :</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Moris Jonhson&#34;</span>.into()
+</span></span></code></pre></div><p>Please note that you need to specify the <code>type</code> here, else the compiler will panic.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span> --&gt; src/main.rs:8:9
+</span></span><span style="display:flex;"><span>  |
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">8</span> |     let name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Moris Jonhson&#34;</span>.into<span style="color:#f92672">()</span>;
+</span></span><span style="display:flex;"><span>  |         ^^^^                   ---- type must be known at this point
+</span></span><span style="display:flex;"><span>  |
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">=</span> note: cannot satisfy <span style="color:#e6db74">`</span>_: From&lt;&amp;str&gt;<span style="color:#e6db74">`</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">=</span> note: required <span style="color:#66d9ef">for</span> <span style="color:#e6db74">`</span>&amp;str<span style="color:#e6db74">`</span> to implement <span style="color:#e6db74">`</span>Into&lt;_&gt;<span style="color:#e6db74">`</span>
+</span></span><span style="display:flex;"><span>help: consider giving <span style="color:#e6db74">`</span>name<span style="color:#e6db74">`</span> an explicit type
+</span></span><span style="display:flex;"><span>  |
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">8</span> |     let name: /* Type */ <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Moris Jonhson&#34;</span>.into<span style="color:#f92672">()</span>;
+</span></span><span style="display:flex;"><span>  |             ++++++++++++
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>For more information about this error, try <span style="color:#e6db74">`</span>rustc --explain E0283<span style="color:#e6db74">`</span>.
+</span></span></code></pre></div><p>Although rust can infer the types of the variables some times, in complicated cases we need to mention the type of the variable, although it is a good habit to write rust with types mentioned when you are defining variables.</p>
+<h4 id="acessing-characters">Acessing characters:<a href="#acessing-characters" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>Since we now have a basic idea on <code>String</code> and <code>&amp;str</code> let&rsquo;s see all the fancy things that we can do with it and how we can actually do it, first things first accessing characters. See the code snippet below ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: <span style="color:#66d9ef">&amp;</span><span style="color:#66d9ef">str</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Moris&#34;</span>;
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>, name[<span style="color:#ae81ff">1</span><span style="color:#f92672">..</span><span style="color:#ae81ff">3</span>]);
+</span></span></code></pre></div><p>This won&rsquo;t work, will throw an error saying <code>help: the trait `Sized` is not implemented for `str`</code>. Why did this happen then ? Cause you tried to splice a <code>&amp;str</code> ( <code>Moris</code> &ndash;&gt; <code>or</code>) , since the result is a <code>str</code> type - rust will not accept it, thus let&rsquo;s tell it to traverse the reference and take the indices. The same error will happen when you define a <code>String</code> and slice it this way.. so to correctly print it out :</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: <span style="color:#66d9ef">&amp;</span><span style="color:#66d9ef">str</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Moris&#34;</span>;
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>, <span style="color:#f92672">&amp;</span>name[<span style="color:#ae81ff">1</span><span style="color:#f92672">..</span><span style="color:#ae81ff">3</span>]);                <span style="color:#75715e">// Prints out &#39;or&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// Now define a `String` type and print it;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span> String::from(<span style="color:#e6db74">&#34;Moris&#34;</span>);
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>, <span style="color:#f92672">&amp;</span>name[<span style="color:#ae81ff">1</span><span style="color:#f92672">..</span><span style="color:#ae81ff">3</span>]);                <span style="color:#75715e">// Prints out &#39;or&#39;
+</span></span></span></code></pre></div><p>To get the length of a string you can use the method <code>.len()</code> on any <code>&amp;str</code> or <code>String</code> variables, it will return a <code>usize</code> integer.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: <span style="color:#66d9ef">&amp;</span><span style="color:#66d9ef">str</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Moris&#34;</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> two_letters <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>name[<span style="color:#ae81ff">0</span><span style="color:#f92672">..</span><span style="color:#ae81ff">2</span>];
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>,two_letters.len());           <span style="color:#75715e">// Prints 2
+</span></span></span></code></pre></div><h4 id="string-operations">String operations:<a href="#string-operations" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>To add and remove characters from a <code>String</code> , we can use <code>.push()</code> and <code>.push_str()</code> . Can&rsquo;t we do that on <code>&amp;str</code> - No. The <code>&amp;str</code> contains immutable strings, so we can&rsquo;t modify it once defined.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> name: String <span style="color:#f92672">=</span> String::from(<span style="color:#e6db74">&#34;Moris&#34;</span>);
+</span></span><span style="display:flex;"><span>  name.push(<span style="color:#e6db74">&#39; &#39;</span>);                           <span style="color:#75715e">// Push a single character ;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  name.push_str(<span style="color:#e6db74">&#34;Johnson&#34;</span>);                 <span style="color:#75715e">// Push multiple chracter string;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  println!(<span style="color:#e6db74">&#34;Name : </span><span style="color:#e6db74">{name}</span><span style="color:#e6db74">&#34;</span>);                <span style="color:#75715e">// Prints Name : Moris Johnson
+</span></span></span></code></pre></div><p>To remove characters by index, we can use <code>.remove()</code> . You can also insert a character using the <code>.insert()</code> method, you have to give it a index and a <code>char</code> that you want to insert , you can insert multiple characters using <code>.insert_str()</code> method as well;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  name.remove(<span style="color:#ae81ff">5</span>);                           <span style="color:#75715e">// Remove character at index 5;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  println!(<span style="color:#e6db74">&#34;Name: </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>, name);               <span style="color:#75715e">// Prints Name : MorisJohnson
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  name.insert(<span style="color:#ae81ff">5</span>,<span style="color:#e6db74">&#39; &#39;</span>);                       <span style="color:#75715e">// Inserts &#39; &#39; at index 5
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  println!(<span style="color:#e6db74">&#34;Name: </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>, name);               <span style="color:#75715e">// Prints Name : Moris Johnson
+</span></span></span></code></pre></div><p>To compare two strings, you can use the <code>assert_eq!()</code> macro, or the <code>if</code> statement too ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> old: String  <span style="color:#f92672">=</span> String::from(<span style="color:#e6db74">&#34;Moris&#34;</span>); 
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> new: String  <span style="color:#f92672">=</span> String::from(<span style="color:#e6db74">&#34;Moris&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Check if both strings are equal ; using assert_eq!() macro
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// panics and prints &#39;Both strings does not match&#39; when they don&#39;t match;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// Try changing them at your end and check;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  assert_eq!(old, new, <span style="color:#e6db74">&#34;Both strings does not match&#34;</span>); 
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Compare them using `if` statements ;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> old <span style="color:#f92672">==</span> new {                                      
+</span></span><span style="display:flex;"><span>      println!(<span style="color:#e6db74">&#34;True&#34;</span>);
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><p>You can also parse a <code>str</code> to other types, but we need to handle the exceptions also ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> num: <span style="color:#66d9ef">u32</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;32&#34;</span>.parse().expect(<span style="color:#e6db74">&#34;Not a number i guess&#34;</span>);
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;The number is </span><span style="color:#e6db74">{num}</span><span style="color:#e6db74">&#34;</span>);
+</span></span></code></pre></div><p>If you parse a string that&rsquo;s not a number like <code>32i</code> the code will panic saying <code>Not a number i guess: ParseFloatError { kind: Invalid }</code>. So that <code>.expect()</code> method tells you the user why it panicked. You can also parse strings to <code>floats</code> too; Try it out.</p>
+<p>To convert a string to uppercase and vice-versa you can use the methods <code>.to_uppercase()</code> and <code>.to_lowercase()</code>. Please note that this returns a new <code>String</code> unlike other methods ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  String::from(<span style="color:#e6db74">&#34;Moris&#34;</span>);
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;Name: </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>, name.to_lowercase());            <span style="color:#75715e">// Prints Name: moris
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  println!(<span style="color:#e6db74">&#34;Name: </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>,name.to_uppercase());             <span style="color:#75715e">// Prints Name: MORIS
+</span></span></span></code></pre></div><p>Repeating a string <code>n</code> times can be done with <code>.repeat(n)</code> method, this also returns a string so make sure you handle it fine.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  <span style="color:#e6db74">&#34;Moris&#34;</span>.repeat(<span style="color:#ae81ff">2</span>);
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;Name : </span><span style="color:#e6db74">{name}</span><span style="color:#e6db74">&#34;</span>);                            <span style="color:#75715e">// Prints Name : MorisMoris
+</span></span></span></code></pre></div><p>To replace a substring with a new value, you can use the method <code>.replace()</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  String::from(<span style="color:#e6db74">&#34;Moris Johnson&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> newname <span style="color:#f92672">=</span> name.replace(<span style="color:#e6db74">&#34;Moris&#34;</span>, <span style="color:#e6db74">&#34;Micheal&#34;</span>);
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;New Name : </span><span style="color:#e6db74">{newname}</span><span style="color:#e6db74">&#34;</span>);                     <span style="color:#75715e">// Prints New Name : Micheal Johnson
+</span></span></span></code></pre></div><h4 id="spliting-and-joining-strngs">Spliting and Joining strngs:<a href="#spliting-and-joining-strngs" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>To split a string at a <code>char</code> we can use the <code>.split()</code> method, but we have to properly collect it&rsquo;s output into another variables.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  String::from(<span style="color:#e6db74">&#34;Moris Johnson&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> chars <span style="color:#f92672">=</span> name.split(<span style="color:#e6db74">&#34; &#34;</span>);
+</span></span></code></pre></div><p>This prints :</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Split<span style="color:#f92672">(</span>SplitInternal <span style="color:#f92672">{</span> start: 0, end: 13, matcher: StrSearcher <span style="color:#f92672">{</span> haystack: <span style="color:#e6db74">&#34;Moris Johnson&#34;</span>, needle: <span style="color:#e6db74">&#34; &#34;</span>, searcher: TwoWay<span style="color:#f92672">(</span>TwoWaySearcher <span style="color:#f92672">{</span> crit_pos: 0, crit_pos_back: 1, period: 1, byteset: 4294967296, position: 0, end: 13, memory: 0, memory_back: <span style="color:#ae81ff">1</span> <span style="color:#f92672">})</span> <span style="color:#f92672">}</span>, allow_trailing_empty: true, finished: false <span style="color:#f92672">})</span>
+</span></span></code></pre></div><p>Which&hellip;. we can&rsquo;t really make sense of. Hence we can define char as a <code>Vec&lt;&amp;str&gt;</code> and use <code>.collect()</code> method to initialize it - store it to a parsable format..</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  String::from(<span style="color:#e6db74">&#34;Moris Johnson&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> chars: Vec<span style="color:#f92672">&lt;&amp;</span><span style="color:#66d9ef">str</span><span style="color:#f92672">&gt;</span> <span style="color:#f92672">=</span> name.split(<span style="color:#e6db74">&#34; &#34;</span>).collect();
+</span></span><span style="display:flex;"><span>  println!(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{:?}</span><span style="color:#e6db74">&#34;</span>,chars);                           <span style="color:#75715e">// Prints [&#34;Moris&#34;, &#34;Johnson&#34;]
+</span></span></span></code></pre></div><p>Another useful method that we need to know is <code>.trim()</code> which allows us to remove trailing and leading <code>WhiteSpaces</code> ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  String::from(<span style="color:#e6db74">&#34;    Moris Johnson   &#34;</span>);
+</span></span><span style="display:flex;"><span>  assert_eq!(<span style="color:#e6db74">&#34;Moris Johnson&#34;</span>, name.trim(), <span style="color:#e6db74">&#34;No the trimmed strings doesn&#39;t match&#34;</span>);
+</span></span></code></pre></div><p>To find the occurence of a substring in a <code>String</code> we can use the <code>.find()</code> method, which returns the first index of the first substring that matches the pattern;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  String::from(<span style="color:#e6db74">&#34;Moris Johnson&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Prints The index is: 6
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  println!(<span style="color:#e6db74">&#34;The index is: </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>,name.find(<span style="color:#e6db74">&#34;Johnson&#34;</span>).unwrap());
+</span></span></code></pre></div><h4 id="iterating-over-strings">Iterating over strings:<a href="#iterating-over-strings" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>To iterate over <code>str</code>, there are two methods that can be used per your needs; one is <code>.chars()</code> and the other is <code>.char_indices()</code></p>
+<ul>
+<li><code>.chars()</code> let&rsquo;s you iterate over with 1 variable, that is the character.</li>
+<li><code>.char_indices()</code> let&rsquo;s you iterate over with 2 variables, (index, char).</li>
+</ul>
+<p>Run the code and find out for yourself how they work ;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rust" data-lang="rust"><span style="display:flex;"><span>  <span style="color:#66d9ef">let</span> name: String <span style="color:#f92672">=</span>  String::from(<span style="color:#e6db74">&#34;Moris Johnson&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Iterate over just the characters;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> i <span style="color:#66d9ef">in</span> name.chars(){
+</span></span><span style="display:flex;"><span>      println!(<span style="color:#e6db74">&#34;char </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>,i);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Iterate over with characters and it&#39;s index.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> (i, c) <span style="color:#66d9ef">in</span> name.char_indices(){
+</span></span><span style="display:flex;"><span>      println!(<span style="color:#e6db74">&#34;Index </span><span style="color:#e6db74">{}</span><span style="color:#e6db74"> and char </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#34;</span>,i,c);
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><p>With this, we have learnt all the basic operations that can be done with strings, this is not the end of it.. there are many other methods available that can help us in manipulating strings. Please refer to the official documentation to learn about these methods.</p>
+<h2 id="afterword">Afterword<a href="#afterword" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<hr>
+<p>I&rsquo;m by no means an expert - just another learner, so if there is any mistake with the concepts/code snippets provided in this article, please feel free to point it out. Constructive criticism is always welcome and this is no means a stopping point for learning about strings, please go through the reference links and experiment by yourself - the more mistakes you make the more you can learn. I hope this article becomes a reference to understanding strings in Rust language.</p>
+<h2 id="references-">References :<a href="#references-" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<hr>
+<ul>
+<li><code>str</code> documentation: <a href="https://doc.rust-lang.org/std/primitive.str.html">here</a></li>
+<li><code>String</code> documentation: <a href="https://doc.rust-lang.org/std/string/struct.String.html">here</a></li>
+</ul>
+
+      </div></div>
+
+  
+    
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2025 Powered by <a href="https://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/mirus-ua/hugo-theme-re-terminal" target="_blank">Theme</a> made by <a href="https://github.com/mirus-ua" target="_blank">Mirus</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>
